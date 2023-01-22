@@ -234,7 +234,35 @@ namespace NzbDrone.Common.Disk
 
         protected virtual void CopyFileInternal(string source, string destination, bool overwrite = false)
         {
-            File.Copy(source, destination, overwrite);
+            // File.Copy(source, destination, overwrite);
+            CopyFileWithTempFile(source, destination, overwrite);
+        }
+
+        private void CopyFileWithTempFile(string source, string destination, bool overwrite = false)
+        {
+            TransferFileWithTempFile(source, destination, overwrite, false);
+        }
+
+        private void MoveFileWithTempFile(string source, string destination)
+        {
+            TransferFileWithTempFile(source, destination, true, true);
+        }
+
+        private void TransferFileWithTempFile(string source, string destination, bool overwrite = false, bool deleteSource = false)
+        {
+            var tempDestination = destination + ".transfer~";
+
+            // Copy to temporary file
+            File.Copy(source, tempDestination, true);
+
+            // Move to final file name once temporary file is done copying
+            File.Move(tempDestination, destination, overwrite);
+
+            // Delete the source file if transfer was a move action
+            if (deleteSource)
+            {
+                File.Delete(source);
+            }
         }
 
         public void MoveFile(string source, string destination, bool overwrite = false)
@@ -271,7 +299,8 @@ namespace NzbDrone.Common.Disk
                 throw new FileAlreadyExistsException("File already exists", destination);
             }
 
-            File.Move(source, destination);
+            // File.Move(source, destination);
+            MoveFileWithTempFile(source, destination);
         }
 
         public virtual bool TryRenameFile(string source, string destination)
