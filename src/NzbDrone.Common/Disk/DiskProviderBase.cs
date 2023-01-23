@@ -252,11 +252,23 @@ namespace NzbDrone.Common.Disk
         {
             var tempDestination = destination + ".transfer~";
 
+            // Delete existing temporary file
+            if (FileExists(tempDestination))
+            {
+                DeleteFile(tempDestination);
+            }
+            
+            // Throw error if the file exists and overwrite is false
+            if (FileExists(destination) && !overwrite)
+            {
+                throw new FileAlreadyExistsException("File already exists", destination);
+            }
+
             // Copy to temporary file
             File.Copy(source, tempDestination, true);
 
             // Move to final file name once temporary file is done copying
-            File.Move(tempDestination, destination, overwrite);
+            File.Move(tempDestination, destination, true);
 
             // Delete the source file if transfer was a move action
             if (deleteSource)
