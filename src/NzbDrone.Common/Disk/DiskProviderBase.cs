@@ -260,7 +260,7 @@ namespace NzbDrone.Common.Disk
             {
                 DeleteFile(tempDestination);
             }
-            
+
             // Throw error if the file exists and overwrite is false
             if (FileExists(destination) && !overwrite)
             {
