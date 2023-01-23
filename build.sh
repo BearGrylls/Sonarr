@@ -1,4 +1,5 @@
 #! /bin/bash
+
 msBuildVersion='15.0'
 outputFolder='./_output'
 outputFolderWindows='./_output_windows'
@@ -107,9 +108,9 @@ BuildWithMSBuild()
 BuildWithXbuild()
 {
     export MONO_IOMAP=case
-    CheckExitCode msbuild /t:Clean $slnFile
+    CheckExitCode dotnet build /t:Clean $slnFile
     mono $nuget restore $slnFile
-    CheckExitCode msbuild /p:Configuration=Release /p:Platform=x86 /t:Build /p:AllowedReferenceRelatedFileExtensions=.pdb $slnFile
+    CheckExitCode dotnet build /p:Configuration=Release /p:Platform=x86 /t:Build /p:AllowedReferenceRelatedFileExtensions=.pdb $slnFile
 }
 
 LintUI()
