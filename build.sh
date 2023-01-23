@@ -89,7 +89,7 @@ Build()
 YarnInstall()
 {
     ProgressStart 'yarn install'
-    yarn install --frozen-lockfile --network-timeout 120000
+    yarn install --ignore-engines --frozen-lockfile --network-timeout 120000
     ProgressEnd 'yarn install'
 }
 
