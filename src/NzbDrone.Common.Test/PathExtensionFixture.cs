@@ -35,6 +35,7 @@ namespace NzbDrone.Common.Test
         [TestCase(@"\\Testserver\Test\file.ext", @"\\Testserver\Test\file.ext")]
         [TestCase(@"\\Testserver\Test\file.ext\\", @"\\Testserver\Test\file.ext")]
         [TestCase(@"\\Testserver\Test\file.ext   \\", @"\\Testserver\Test\file.ext")]
+        [TestCase(@"//CAPITAL//lower// ", @"\\CAPITAL\lower")]
         public void Clean_Path_Windows(string dirty, string clean)
         {
             WindowsOnly();
@@ -155,6 +156,25 @@ namespace NzbDrone.Common.Test
         {
             PosixOnly();
             path.GetParentPath().Should().Be(parentPath);
+        }
+
+        [TestCase(@"C:\Test\mydir", "Test")]
+        [TestCase(@"C:\Test\", @"C:\")]
+        [TestCase(@"C:\", null)]
+        [TestCase(@"\\server\share", null)]
+        [TestCase(@"\\server\share\test", @"\\server\share")]
+        public void path_should_return_parent_name_windows(string path, string parentPath)
+        {
+            WindowsOnly();
+            path.GetParentName().Should().Be(parentPath);
+        }
+
+        [TestCase(@"/", null)]
+        [TestCase(@"/test", "/")]
+        public void path_should_return_parent_name_mono(string path, string parentPath)
+        {
+            PosixOnly();
+            path.GetParentName().Should().Be(parentPath);
         }
 
         [Test]

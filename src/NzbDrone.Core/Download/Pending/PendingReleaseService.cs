@@ -10,7 +10,6 @@ using NzbDrone.Core.DecisionEngine;
 using NzbDrone.Core.Download.Aggregation;
 using NzbDrone.Core.Indexers;
 using NzbDrone.Core.Jobs;
-using NzbDrone.Core.Languages;
 using NzbDrone.Core.Messaging.Events;
 using NzbDrone.Core.Parser;
 using NzbDrone.Core.Parser.Model;
@@ -97,7 +96,7 @@ namespace NzbDrone.Core.Download.Pending
 
                     var episodeIds = decision.RemoteEpisode.Episodes.Select(e => e.Id);
 
-                    var existingReports = episodeIds.SelectMany(v => alreadyPendingByEpisode[v] ?? Enumerable.Empty<PendingRelease>())
+                    var existingReports = episodeIds.SelectMany(v => alreadyPendingByEpisode[v])
                                                     .Distinct().ToList();
 
                     var matchingReports = existingReports.Where(MatchingReleasePredicate(decision.RemoteEpisode.Release)).ToList();
@@ -117,9 +116,9 @@ namespace NzbDrone.Core.Download.Pending
                             _logger.Debug("The release {0} is already pending with reason {1}, not adding again", decision.RemoteEpisode, reason);
                         }
 
-                        if (matchingReports.Count() > 1)
+                        if (matchingReports.Count > 1)
                         {
-                            _logger.Debug("The release {0} had {1} duplicate pending, removing duplicates.", decision.RemoteEpisode, matchingReports.Count() - 1);
+                            _logger.Debug("The release {0} had {1} duplicate pending, removing duplicates.", decision.RemoteEpisode, matchingReports.Count - 1);
 
                             foreach (var duplicate in matchingReports.Skip(1))
                             {
@@ -243,8 +242,7 @@ namespace NzbDrone.Core.Download.Pending
 
             return seriesReleases.Select(r => r.RemoteEpisode)
                                  .Where(r => r.Episodes.Select(e => e.Id).Intersect(episodeIds).Any())
-                                 .OrderByDescending(p => p.Release.AgeHours)
-                                 .FirstOrDefault();
+                                 .MaxBy(p => p.Release.AgeHours);
         }
 
         private ILookup<int, PendingRelease> CreateEpisodeLookup(IEnumerable<PendingRelease> alreadyPending)

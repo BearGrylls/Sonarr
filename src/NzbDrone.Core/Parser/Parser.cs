@@ -25,14 +25,17 @@ namespace NzbDrone.Core.Parser
                 // Some Chinese anime releases contain both English and Chinese titles, remove the Chinese title and replace with normal anime pattern
                 new RegexReplace(@"^\[(?:(?<subgroup>[^\]]+?)(?:[\u4E00-\u9FCC]+)?)\]\[(?<title>[^\]]+?)(?:\s(?<chinesetitle>[\u4E00-\u9FCC][^\]]*?))\]\[(?:(?:[\u4E00-\u9FCC]+?)?(?<episode>\d{1,4})(?:[\u4E00-\u9FCC]+?)?)\]", "[${subgroup}] ${title} - ${episode} - ", RegexOptions.Compiled),
 
-                // Chinese LoliHouse/Lilith-Raws releases use Season + Absolute Episode Number, normalize using SxxExx format
-                new RegexReplace(@"^\[(?<subgroup>[^\]]*?(?:LoliHouse|ZERO|Lilith-Raws)[^\]]*?)\].*/(?<title>[^\[\]]+?)(?:S?(?<season>(?<!\d+)\d{1,2}(?!\d+)))(?: - (?<episode>[0-9-]+)\s*|\[第?(?<episode>[0-9]+(?:-[0-9]+)?)话?(?:END|完)?\])\[", "[${subgroup}] ${title} S${season}E${episode} [", RegexOptions.Compiled),
+                // Chinese LoliHouse/ZERO/Lilith-Raws/Skymoon-Raws/orion origin releases don't use the expected brackets, normalize using brackets
+                new RegexReplace(@"^\[(?<subgroup>[^\]]*?(?:LoliHouse|ZERO|Lilith-Raws|Skymoon-Raws|orion origin)[^\]]*?)\](?<title>[^\[\]]+?)(?: - (?<episode>[0-9-]+)\s*|\[第?(?<episode>[0-9]+(?:-[0-9]+)?)话?(?:END|完)?\])\[", "[${subgroup}][${title}][${episode}][", RegexOptions.Compiled),
 
-                // Chinese LoliHouse/ZERO/Lilith-Raws releases don't use the expected brackets, normalize using brackets
-                new RegexReplace(@"^\[(?<subgroup>[^\]]*?(?:LoliHouse|ZERO|Lilith-Raws)[^\]]*?)\](?<title>[^\[\]]+?)(?: - (?<episode>[0-9-]+)\s*|\[第?(?<episode>[0-9]+(?:-[0-9]+)?)话?(?:END|完)?\])\[", "[${subgroup}][${title}][${episode}][", RegexOptions.Compiled),
+                // Most Chinese anime releases contain additional brackets/separators for chinese and non-chinese titles, remove junk first and if it has S0x as season number, convert it to Sx
+                new RegexReplace(@"^\[(?<subgroup>[^\]]+)\](?:\s?★[^\[ -]+\s?)?\[?(?:(?<chinesetitle>(?=[^\]]*?[\u4E00-\u9FCC])[^\]]*?)(?:\]\[|\s*[_/·]\s*)){0,2}(?<title>[^\[\]]+?)(?:\s(?:S?(?<!\d+)((0)(?<season>\d)|(?<season>[1-9]\d))(?!\d+)))\]?(?:\[\d{4}\])?\[第?(?<episode>[0-9]+(?:-[0-9]+)?)(?:话|集)?(?: ?END|完| ?Fin)?\]", "[${subgroup}] ${title} S${season} - ${episode} ", RegexOptions.Compiled),
 
                 // Most Chinese anime releases contain additional brackets/separators for chinese and non-chinese titles, remove junk and replace with normal anime pattern
                 new RegexReplace(@"^\[(?<subgroup>[^\]]+)\](?:\s?★[^\[ -]+\s?)?\[?(?:(?<chinesetitle>(?=[^\]]*?[\u4E00-\u9FCC])[^\]]*?)(?:\]\[|\s*[_/·]\s*)){0,2}(?<title>[^\]]+?)\]?(?:\[\d{4}\])?\[第?(?<episode>[0-9]+(?:-[0-9]+)?)(?:话|集)?(?: ?END|完| ?Fin)?\]", "[${subgroup}] ${title} - ${episode} ", RegexOptions.Compiled),
+
+                // Some Chinese anime releases contain both Chinese and English titles, remove the Chinese title first and if it has S0x as season number, convert it to Sx
+                new RegexReplace(@"^\[(?<subgroup>[^\]]+)\](?:\s)(?:(?<chinesetitle>(?=[^\]]*?[\u4E00-\u9FCC])[^\]]*?)(?:\s/\s))(?<title>[^\[\]]+?)(?:\s(?:S?(?<!\d+)((0)(?<season>\d)|(?<season>[1-9]\d))(?!\d+)))(?:[- ]+)(?<episode>[0-9]+(?:-[0-9]+)?)话?(?:END|完)?", "[${subgroup}] ${title} S${season} - ${episode} ", RegexOptions.Compiled),
 
                 // Some Chinese anime releases contain both Chinese and English titles, remove the Chinese title and replace with normal anime pattern
                 new RegexReplace(@"^\[(?<subgroup>[^\]]+)\](?:\s)(?:(?<chinesetitle>(?=[^\]]*?[\u4E00-\u9FCC])[^\]]*?)(?:\s/\s))(?<title>[^\]]+?)(?:[- ]+)(?<episode>[0-9]+(?:-[0-9]+)?)话?(?:END|完)?", "[${subgroup}] ${title} - ${episode} ", RegexOptions.Compiled),
@@ -181,7 +184,7 @@ namespace NzbDrone.Core.Parser
                           RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
                 // Multi-season pack
-                new Regex(@"^(?<title>.+?)[-_. ]+(?:S|(?:Season|Saison|Series|Stagione)[_. ])(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))(?:-|[-_. ]{3})(?:S|(?:Season|Saison|Series|Stagione)[_. ])?(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))",
+                new Regex(@"^(?<title>.+?)(Complete Series)?[-_. ]+(?:S|(?:Season|Saison|Series|Stagione)[_. ])(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))(?:[-_. ]{1}|[-_. ]{3})(?:S|(?:Season|Saison|Series|Stagione)[_. ])?(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))",
                     RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
                 // Partial season pack
@@ -226,7 +229,11 @@ namespace NzbDrone.Core.Parser
 
                 // Multi-episode with episodes in square brackets (Series Title [S01E11E12] or Series Title [S01E11-12])
                 new Regex(@"(?:.*(?:^))(?<title>.*?)[-._ ]+\[S(?<season>(?<!\d+)\d{2}(?!\d+))(?:[E-]{1,2}(?<episode>(?<!\d+)\d{2}(?!\d+)))+\]",
-                    RegexOptions.IgnoreCase | RegexOptions.Compiled),
+                          RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+                // Multi-episode with episodes in brackets (Series Title (S01E11E12) or Series Title (S01E11-12))
+                new Regex(@"(?:.*(?:^))(?<title>.*?)[-._ ]+\(S(?<season>(?<!\d+)\d{2}(?!\d+))(?:[E-]{1,2}(?<episode>(?<!\d+)\d{2}(?!\d+)))+\)",
+                          RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
                 // Multi-episode release with no space between series title and season (S01E11E12)
                 new Regex(@"(?:.*(?:^))(?<title>.*?)S(?<season>(?<!\d+)\d{2}(?!\d+))(?:E(?<episode>(?<!\d+)\d{2}(?!\d+)))+",
@@ -513,6 +520,31 @@ namespace NzbDrone.Core.Parser
 
             var result = ParseTitle(fileInfo.Name);
 
+            if (result == null && int.TryParse(Path.GetFileNameWithoutExtension(fileInfo.Name), out var number))
+            {
+                Logger.Debug("Attempting to parse episode info using directory and file names. {0}", fileInfo.Directory.Name);
+                result = ParseTitle(fileInfo.Directory.Name);
+
+                if (result != null && result.AbsoluteEpisodeNumbers.Contains(number))
+                {
+                    result.AbsoluteEpisodeNumbers = new[] { number };
+                }
+                else if (result != null && result.EpisodeNumbers.Contains(number))
+                {
+                    result.EpisodeNumbers = new[] { number };
+                }
+                else
+                {
+                    result = null;
+                }
+            }
+
+            if (result == null)
+            {
+                Logger.Debug("Attempting to parse episode info using combined directory and file names. {0}", fileInfo.Directory.Name);
+                result = ParseTitle(fileInfo.Directory.Name + " " + fileInfo.Name);
+            }
+
             if (result == null)
             {
                 Logger.Debug("Attempting to parse episode info using directory and file names. {0}", fileInfo.Directory.Name);
@@ -542,7 +574,7 @@ namespace NzbDrone.Core.Parser
                 var titleWithoutExtension = RemoveFileExtension(title).ToCharArray();
                 Array.Reverse(titleWithoutExtension);
 
-                title = new string(titleWithoutExtension) + title.Substring(titleWithoutExtension.Length);
+                title = string.Concat(new string(titleWithoutExtension), title.AsSpan(titleWithoutExtension.Length));
 
                 Logger.Debug("Reversed name detected. Converted to '{0}'", title);
             }
@@ -573,7 +605,7 @@ namespace NzbDrone.Core.Parser
                     var titleWithoutExtension = RemoveFileExtension(title).ToCharArray();
                     Array.Reverse(titleWithoutExtension);
 
-                    title = new string(titleWithoutExtension) + title.Substring(titleWithoutExtension.Length);
+                    title = string.Concat(new string(titleWithoutExtension), title.AsSpan(titleWithoutExtension.Length));
 
                     Logger.Debug("Reversed name detected. Converted to '{0}'", title);
                 }
@@ -887,8 +919,8 @@ namespace NzbDrone.Core.Parser
                 result = new ParsedEpisodeInfo
                 {
                     ReleaseTitle = releaseTitle,
-                    EpisodeNumbers = new int[0],
-                    AbsoluteEpisodeNumbers = new int[0]
+                    EpisodeNumbers = Array.Empty<int>(),
+                    AbsoluteEpisodeNumbers = Array.Empty<int>()
                 };
 
                 foreach (Match matchGroup in matchCollection)

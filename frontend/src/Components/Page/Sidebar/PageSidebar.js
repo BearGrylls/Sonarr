@@ -31,14 +31,6 @@ const links = [
       {
         title: 'Library Import',
         to: '/add/import'
-      },
-      {
-        title: 'Mass Editor',
-        to: '/serieseditor'
-      },
-      {
-        title: 'Season Pass',
-        to: '/seasonpass'
       }
     ]
   },

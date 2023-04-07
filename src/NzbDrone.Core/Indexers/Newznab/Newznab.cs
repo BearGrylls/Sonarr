@@ -21,7 +21,7 @@ namespace NzbDrone.Core.Indexers.Newznab
 
         public override DownloadProtocol Protocol => DownloadProtocol.Usenet;
 
-        public override int PageSize => _capabilitiesProvider.GetCapabilities(Settings).DefaultPageSize;
+        public override int PageSize => Math.Min(100, Math.Max(_capabilitiesProvider.GetCapabilities(Settings).DefaultPageSize, _capabilitiesProvider.GetCapabilities(Settings).MaxPageSize));
 
         public override IIndexerRequestGenerator GetRequestGenerator()
         {
@@ -51,7 +51,7 @@ namespace NzbDrone.Core.Indexers.Newznab
                 yield return GetDefinition("OZnzb.com", GetSettings("https://api.oznzb.com"));
                 yield return GetDefinition("SimplyNZBs", GetSettings("https://simplynzbs.com"));
                 yield return GetDefinition("Tabula Rasa", GetSettings("https://www.tabula-rasa.pw", apiPath: @"/api/v1/api"));
-                yield return GetDefinition("AnimeTosho Usenet", GetSettings("https://feed.animetosho.org", apiPath: @"/nabapi", categories: new int[0], animeCategories: new[] { 5070 }));
+                yield return GetDefinition("AnimeTosho Usenet", GetSettings("https://feed.animetosho.org", apiPath: @"/nabapi", categories: Array.Empty<int>(), animeCategories: new[] { 5070 }));
             }
         }
 
@@ -64,17 +64,17 @@ namespace NzbDrone.Core.Indexers.Newznab
         private IndexerDefinition GetDefinition(string name, NewznabSettings settings)
         {
             return new IndexerDefinition
-                   {
-                       EnableRss = false,
-                       EnableAutomaticSearch = false,
-                       EnableInteractiveSearch = false,
-                       Name = name,
-                       Implementation = GetType().Name,
-                       Settings = settings,
-                       Protocol = DownloadProtocol.Usenet,
-                       SupportsRss = SupportsRss,
-                       SupportsSearch = SupportsSearch
-                   };
+            {
+                EnableRss = false,
+                EnableAutomaticSearch = false,
+                EnableInteractiveSearch = false,
+                Name = name,
+                Implementation = GetType().Name,
+                Settings = settings,
+                Protocol = DownloadProtocol.Usenet,
+                SupportsRss = SupportsRss,
+                SupportsSearch = SupportsSearch
+            };
         }
 
         private NewznabSettings GetSettings(string url, string apiPath = null, int[] categories = null, int[] animeCategories = null)
@@ -134,7 +134,7 @@ namespace NzbDrone.Core.Indexers.Newznab
             {
                 _logger.Warn(ex, "Unable to connect to indexer: " + ex.Message);
 
-                return new ValidationFailure(string.Empty, "Unable to connect to indexer, check the log for more details");
+                return new ValidationFailure(string.Empty, $"Unable to connect to indexer: {ex.Message}. Check the log surrounding this error for details");
             }
         }
 

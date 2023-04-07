@@ -43,7 +43,7 @@ namespace NzbDrone.Core.Indexers
         {
             if (!SupportsRss)
             {
-                return new List<ReleaseInfo>();
+                return Array.Empty<ReleaseInfo>();
             }
 
             return FetchReleases(g => g.GetRecentRequests(), true);
@@ -53,7 +53,7 @@ namespace NzbDrone.Core.Indexers
         {
             if (!SupportsSearch)
             {
-                return new List<ReleaseInfo>();
+                return Array.Empty<ReleaseInfo>();
             }
 
             return FetchReleases(g => g.GetSearchRequests(searchCriteria));
@@ -63,7 +63,7 @@ namespace NzbDrone.Core.Indexers
         {
             if (!SupportsSearch)
             {
-                return new List<ReleaseInfo>();
+                return Array.Empty<ReleaseInfo>();
             }
 
             return FetchReleases(g => g.GetSearchRequests(searchCriteria));
@@ -73,7 +73,7 @@ namespace NzbDrone.Core.Indexers
         {
             if (!SupportsSearch)
             {
-                return new List<ReleaseInfo>();
+                return Array.Empty<ReleaseInfo>();
             }
 
             return FetchReleases(g => g.GetSearchRequests(searchCriteria));
@@ -83,7 +83,7 @@ namespace NzbDrone.Core.Indexers
         {
             if (!SupportsSearch)
             {
-                return new List<ReleaseInfo>();
+                return Array.Empty<ReleaseInfo>();
             }
 
             return FetchReleases(g => g.GetSearchRequests(searchCriteria));
@@ -93,7 +93,7 @@ namespace NzbDrone.Core.Indexers
         {
             if (!SupportsSearch)
             {
-                return new List<ReleaseInfo>();
+                return Array.Empty<ReleaseInfo>();
             }
 
             return FetchReleases(g => g.GetSearchRequests(searchCriteria));
@@ -103,7 +103,7 @@ namespace NzbDrone.Core.Indexers
         {
             if (!SupportsSearch)
             {
-                return new List<ReleaseInfo>();
+                return Array.Empty<ReleaseInfo>();
             }
 
             return FetchReleases(g => g.GetSearchRequests(searchCriteria));
@@ -389,7 +389,7 @@ namespace NzbDrone.Core.Indexers
             {
                 _logger.Warn(ex, "Unable to connect to indexer");
 
-                return new ValidationFailure(string.Empty, "Unable to connect to indexer, check the log for more details");
+                return new ValidationFailure(string.Empty, $"Unable to connect to indexer: {ex.Message}. Check the log surrounding this error for details");
             }
 
             return null;

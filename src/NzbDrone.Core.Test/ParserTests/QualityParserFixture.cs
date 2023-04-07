@@ -93,6 +93,7 @@ namespace NzbDrone.Core.Test.ParserTests
         [TestCase("The.Series.S01E08.Das.geloeschte.Ich.German.Dubbed.DL.AmazonHD.x264-TVS", false)]
         [TestCase("The.Series.S01E04.Rod.Trip.mit.meinem.Onkel.German.DL.NetflixUHD.x264", false)]
         [TestCase("[HorribleSubs] Series Title! S01 [Web][MKV][h264][480p][AAC 2.0][Softsubs (HorribleSubs)]", false)]
+        [TestCase("Series.Title.S13E11.Ausgebacken.German.AmazonSD.h264-4SF", false)]
         public void should_parse_webdl480p_quality(string title, bool proper)
         {
             ParseAndVerifyQuality(title, Quality.WEBDL480p, proper);
@@ -204,6 +205,8 @@ namespace NzbDrone.Core.Test.ParserTests
         [TestCase("[HorribleSubs] Series Title! S01 [Web][MKV][h264][AAC 2.0][Softsubs (HorribleSubs)]", false)]
         [TestCase("Series.Title.S04E13.960p.WEB-DL.AAC2.0.H.264-squalor", false)]
         [TestCase("Series.Title.S16.DP.WEB.720p.DDP.5.1.H.264.PLEX", false)]
+        [TestCase("Series.Title.S01E01.Erste.Begegnungen.German.DD51.Synced.DL.720p.HBOMaxHD.AVC-TVS", false)]
+        [TestCase("Series.Title.S01E05.Tavora.greift.an.German.DL.720p.DisneyHD.h264-4SF", false)]
         public void should_parse_webdl720p_quality(string title, bool proper)
         {
             ParseAndVerifyQuality(title, Quality.WEBDL720p, proper);
@@ -247,6 +250,8 @@ namespace NzbDrone.Core.Test.ParserTests
         [TestCase("Series.Title.S02E02.This.Year.Will.Be.Different.1080p.WEB.H 265", false)]
         [TestCase("Series Title Season 2 [WEB 1080p HEVC Opus] [Netaro]", false)]
         [TestCase("Series Title Season 2 (WEB 1080p HEVC Opus) [Netaro]", false)]
+        [TestCase("Series.Title.S01E01.Erste.Begegnungen.German.DD51.Synced.DL.1080p.HBOMaxHD.AVC-TVS", false)]
+        [TestCase("Series.Title.S01E05.Tavora.greift.an.German.DL.1080p.DisneyHD.h264-4SF", false)]
         public void should_parse_webdl1080p_quality(string title, bool proper)
         {
             ParseAndVerifyQuality(title, Quality.WEBDL1080p, proper);
@@ -303,6 +308,7 @@ namespace NzbDrone.Core.Test.ParserTests
         [TestCase("The.Series.S01E07.RERIP.720p.BluRay.x264-DEMAND", true)]
         [TestCase("Sans.Series.De.Traces.FRENCH.720p.BluRay.x264-FHD", false)]
         [TestCase("Series.Black.1x01.Selezione.Naturale.ITA.720p.BDMux.x264-NovaRip", false)]
+        [TestCase("Series.Hunter.S02.720p.Blu-ray.Remux.AVC.FLAC.2.0-SiCFoI", false)]
         public void should_parse_bluray720p_quality(string title, bool proper)
         {
             ParseAndVerifyQuality(title, Quality.Bluray720p, proper);
@@ -466,14 +472,16 @@ namespace NzbDrone.Core.Test.ParserTests
             result.ResolutionDetectionSource.Should().Be(QualityDetectionSource.Name);
         }
 
-        [TestCase("Series Title S04E87 REPACK 720p HDTV x264 aAF", true)]
-        [TestCase("Series.Title.S04E87.REPACK.720p.HDTV.x264-aAF", true)]
-        [TestCase("Series.Title.S04E87.PROPER.720p.HDTV.x264-aAF", false)]
-        [TestCase("Series.Title.S01E07.RERIP.720p.BluRay.x264-DEMAND", true)]
-        public void should_be_able_to_parse_repack(string title, bool isRepack)
+        [TestCase("Series Title S04E87 REPACK 720p HDTV x264 aAF", true, 2)]
+        [TestCase("Series.Title.S04E87.REPACK.720p.HDTV.x264-aAF", true, 2)]
+        [TestCase("Series.Title.S04E87.REPACK2.720p.HDTV.x264-aAF", true, 3)]
+        [TestCase("Series.Title.S04E87.PROPER.720p.HDTV.x264-aAF", false, 2)]
+        [TestCase("Series.Title.S01E07.RERIP.720p.BluRay.x264-DEMAND", true, 2)]
+        [TestCase("Series.Title.S01E07.RERIP2.720p.BluRay.x264-DEMAND", true, 3)]
+        public void should_be_able_to_parse_repack(string title, bool isRepack, int version)
         {
             var result = QualityParser.ParseQuality(title);
-            result.Revision.Version.Should().Be(2);
+            result.Revision.Version.Should().Be(version);
             result.Revision.IsRepack.Should().Be(isRepack);
         }
 

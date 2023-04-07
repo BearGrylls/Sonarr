@@ -26,9 +26,25 @@ namespace NzbDrone.Windows.Disk
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool CreateHardLink(string lpFileName, string lpExistingFileName, IntPtr lpSecurityAttributes);
 
+        public override IMount GetMount(string path)
+        {
+            var reparsePoint = GetReparsePoint(path);
+
+            return reparsePoint ?? base.GetMount(path);
+        }
+
+        public override string GetPathRoot(string path)
+        {
+            Ensure.That(path, () => path).IsValidPath(PathValidationType.CurrentOs);
+
+            var reparsePoint = GetReparsePoint(path);
+
+            return reparsePoint?.RootDirectory ?? base.GetPathRoot(path);
+        }
+
         public override long? GetAvailableSpace(string path)
         {
-            Ensure.That(path, () => path).IsValidPath();
+            Ensure.That(path, () => path).IsValidPath(PathValidationType.CurrentOs);
 
             var root = GetPathRoot(path);
 
@@ -42,7 +58,7 @@ namespace NzbDrone.Windows.Disk
 
         public override void InheritFolderPermissions(string filename)
         {
-            Ensure.That(filename, () => filename).IsValidPath();
+            Ensure.That(filename, () => filename).IsValidPath(PathValidationType.CurrentOs);
 
             var fileInfo = new FileInfo(filename);
             var fs = fileInfo.GetAccessControl(AccessControlSections.Access);
@@ -105,7 +121,7 @@ namespace NzbDrone.Windows.Disk
 
         public override long? GetTotalSize(string path)
         {
-            Ensure.That(path, () => path).IsValidPath();
+            Ensure.That(path, () => path).IsValidPath(PathValidationType.CurrentOs);
 
             var root = GetPathRoot(path);
 
@@ -119,7 +135,7 @@ namespace NzbDrone.Windows.Disk
 
         private static long DriveFreeSpaceEx(string folderName)
         {
-            Ensure.That(folderName, () => folderName).IsValidPath();
+            Ensure.That(folderName, () => folderName).IsValidPath(PathValidationType.CurrentOs);
 
             if (!folderName.EndsWith("\\"))
             {
@@ -140,7 +156,7 @@ namespace NzbDrone.Windows.Disk
 
         private static long DriveTotalSizeEx(string folderName)
         {
-            Ensure.That(folderName, () => folderName).IsValidPath();
+            Ensure.That(folderName, () => folderName).IsValidPath(PathValidationType.CurrentOs);
 
             if (!folderName.EndsWith("\\"))
             {
@@ -170,6 +186,29 @@ namespace NzbDrone.Windows.Disk
                 Logger.Debug(ex, string.Format("Hardlink '{0}' to '{1}' failed.", source, destination));
                 return false;
             }
+        }
+
+        private IMount GetReparsePoint(string path)
+        {
+            if (!Directory.Exists(path))
+            {
+                return null;
+            }
+
+            var di = new DirectoryInfo(path);
+            var isReparsePoint = di.Attributes.HasFlag(FileAttributes.ReparsePoint);
+
+            while (!isReparsePoint && (di = di.Parent) != null)
+            {
+                isReparsePoint = di.Attributes.HasFlag(FileAttributes.ReparsePoint);
+            }
+
+            if (isReparsePoint)
+            {
+                return new FolderMount(di);
+            }
+
+            return null;
         }
     }
 }

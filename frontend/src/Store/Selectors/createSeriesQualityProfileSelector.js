@@ -1,10 +1,10 @@
 import { createSelector } from 'reselect';
-import createSeriesSelector from './createSeriesSelector';
+import { createSeriesSelectorForHook } from './createSeriesSelector';
 
-function createSeriesQualityProfileSelector() {
+function createSeriesQualityProfileSelector(seriesId) {
   return createSelector(
     (state) => state.settings.qualityProfiles.items,
-    createSeriesSelector(),
+    createSeriesSelectorForHook(seriesId),
     (qualityProfiles, series = {}) => {
       return qualityProfiles.find((profile) => {
         return profile.id === series.qualityProfileId;

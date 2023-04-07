@@ -1,6 +1,5 @@
 import PropTypes from 'prop-types';
 import React, { Component } from 'react';
-import ReactDOM from 'react-dom';
 import Alert from 'Components/Alert';
 import PathInput from 'Components/Form/PathInput';
 import Button from 'Components/Link/Button';
@@ -38,7 +37,7 @@ class FileBrowserModalContent extends Component {
   constructor(props, context) {
     super(props, context);
 
-    this._scrollerNode = null;
+    this._scrollerRef = React.createRef();
 
     this.state = {
       isFileBrowserModalOpen: false,
@@ -56,20 +55,9 @@ class FileBrowserModalContent extends Component {
       currentPath !== prevState.currentPath
     ) {
       this.setState({ currentPath });
-      this._scrollerNode.scrollTop = 0;
+      this._scrollerRef.current.scrollTop = 0;
     }
   }
-
-  //
-  // Control
-
-  setScrollerRef = (ref) => {
-    if (ref) {
-      this._scrollerNode = ReactDOM.findDOMNode(ref);
-    } else {
-      this._scrollerNode = null;
-    }
-  };
 
   //
   // Listeners
@@ -142,7 +130,7 @@ class FileBrowserModalContent extends Component {
           />
 
           <Scroller
-            ref={this.setScrollerRef}
+            ref={this._scrollerRef}
             className={styles.scroller}
             scrollDirection={scrollDirections.BOTH}
           >
