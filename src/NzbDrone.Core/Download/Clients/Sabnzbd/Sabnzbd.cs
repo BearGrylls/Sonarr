@@ -276,7 +276,16 @@ namespace NzbDrone.Core.Download.Clients.Sabnzbd
                 status.OutputRootFolders = new List<OsPath> { _remotePathMappingService.RemapRemoteToLocal(Settings.Host, category.FullPath) };
             }
 
-            status.RemovesCompletedDownloads = config.Misc.history_retention != "0";
+            if (config.Misc.history_retention.IsNotNullOrWhiteSpace() && config.Misc.history_retention.EndsWith("d"))
+            {
+                int.TryParse(config.Misc.history_retention.AsSpan(0, config.Misc.history_retention.Length - 1),
+                    out var daysRetention);
+                status.RemovesCompletedDownloads = daysRetention < 14;
+            }
+            else
+            {
+                status.RemovesCompletedDownloads = config.Misc.history_retention != "0";
+            }
 
             return status;
         }
@@ -471,6 +480,16 @@ namespace NzbDrone.Core.Download.Clients.Sabnzbd
                         DetailedDescription = "The Category your entered doesn't exist in Sabnzbd. Go to Sabnzbd to create it."
                     };
                 }
+            }
+
+            // New in SABnzbd 4.1, but on older versions this will be empty and not apply
+            if (config.Sorters.Any(s => s.is_active && ContainsCategory(s.sort_cats, Settings.TvCategory)))
+            {
+                return new NzbDroneValidationFailure("TvCategory", "Disable TV Sorting")
+                {
+                    InfoLink = _proxy.GetBaseUrl(Settings, "config/sorting/"),
+                    DetailedDescription = "You must disable sorting for the category Sonarr uses to prevent import issues. Go to Sabnzbd to fix it."
+                };
             }
 
             if (config.Misc.enable_tv_sorting && ContainsCategory(config.Misc.tv_categories, Settings.TvCategory))
