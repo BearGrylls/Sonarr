@@ -99,7 +99,9 @@ class QueueRow extends Component {
       indexer,
       outputPath,
       downloadClient,
+      downloadClientHasPostImportCategory,
       estimatedCompletionTime,
+      added,
       timeleft,
       size,
       sizeleft,
@@ -362,6 +364,15 @@ class QueueRow extends Component {
               );
             }
 
+            if (name === 'added') {
+              return (
+                <RelativeDateCellConnector
+                  key={name}
+                  date={added}
+                />
+              );
+            }
+
             if (name === 'actions') {
               return (
                 <TableRowCell
@@ -410,6 +421,7 @@ class QueueRow extends Component {
         <RemoveQueueItemModal
           isOpen={isRemoveQueueItemModalOpen}
           sourceTitle={title}
+          canChangeCategory={!!downloadClientHasPostImportCategory}
           canIgnore={!!series}
           isPending={isPending}
           onRemovePress={this.onRemoveQueueItemModalConfirmed}
@@ -440,7 +452,9 @@ QueueRow.propTypes = {
   indexer: PropTypes.string,
   outputPath: PropTypes.string,
   downloadClient: PropTypes.string,
+  downloadClientHasPostImportCategory: PropTypes.bool,
   estimatedCompletionTime: PropTypes.string,
+  added: PropTypes.string,
   timeleft: PropTypes.string,
   size: PropTypes.number,
   sizeleft: PropTypes.number,

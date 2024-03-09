@@ -28,9 +28,11 @@ namespace NzbDrone.Core.Parser.Model
         public ParsedEpisodeInfo FolderEpisodeInfo { get; set; }
         public Series Series { get; set; }
         public List<Episode> Episodes { get; set; }
-        public List<EpisodeFile> OldFiles { get; set; }
+        public List<DeletedEpisodeFile> OldFiles { get; set; }
         public QualityModel Quality { get; set; }
         public List<Language> Languages { get; set; }
+        public IndexerFlags IndexerFlags { get; set; }
+        public ReleaseType ReleaseType { get; set; }
         public MediaInfoModel MediaInfo { get; set; }
         public bool ExistingFile { get; set; }
         public bool SceneSource { get; set; }
@@ -44,6 +46,7 @@ namespace NzbDrone.Core.Parser.Model
         public bool FileRenamedAfterScriptImport { get; set; }
         public bool ShouldImportExtras { get; set; }
         public List<string> PossibleExtraFiles { get; set; }
+        public SubtitleTitleInfo SubtitleInfo { get; set; }
 
         public int SeasonNumber
         {

@@ -152,8 +152,19 @@ namespace NzbDrone.Core.Test.ParserTests
             result.Should().Contain(Language.Korean);
         }
 
+        [TestCase("Title.the.Series.2009.S01E08.2160p.WEB-DL.LAV.ENG")]
+        [TestCase("Title.the.Series.S01.COMPLETE.2009.1080p.WEB-DL.x264.AVC.AAC.LT.LV.RU")]
+        [TestCase("Title.the.Series.S03.1080p.WEB.x264.LAT.ENG")]
+        [TestCase("Title.the.Series.S02E02.LATViAN.1080p.WEB.XviD-LOL")]
+        public void should_parse_language_latvian(string postTitle)
+        {
+            var result = LanguageParser.ParseLanguages(postTitle);
+            result.Should().Contain(Language.Latvian);
+        }
+
         [TestCase("Title.the.Series.2009.S01E14.Russian.HDTV.XviD-LOL")]
         [TestCase("Title.the.Series.S01E01.1080p.WEB-DL.Rus.Eng.TVKlondike")]
+        [TestCase("Title.the.Series.S01.COMPLETE.2009.1080p.WEB-DL.x264.AVC.AAC.LT.LV.RU")]
         public void should_parse_language_russian(string postTitle)
         {
             var result = LanguageParser.ParseLanguages(postTitle);
@@ -384,6 +395,75 @@ namespace NzbDrone.Core.Test.ParserTests
         {
             var result = LanguageParser.ParseLanguages(postTitle);
             result.Should().BeEquivalentTo(new[] { Language.English, Language.Spanish, Language.Catalan });
+        }
+
+        [TestCase("Series.Title.S01E01.German.DL.1080p.BluRay.x264-RlsGrp")]
+        [TestCase("Series.Title.S01E01.GERMAN.DL.1080P.WEB.H264-RlsGrp")]
+        [TestCase("Series.Title.2023.S01E01.German.DL.EAC3.1080p.DSNP.WEB.H264-RlsGrp")]
+        public void should_add_original_language_to_german_release_with_dl_tag(string postTitle)
+        {
+            var result = Parser.Parser.ParseTitle(postTitle);
+            result.Languages.Count.Should().Be(2);
+            result.Languages.Should().Contain(Language.German);
+            result.Languages.Should().Contain(Language.Original);
+        }
+
+        [TestCase("Series.Title.2023.S01E01.GERMAN.1080P.WEB-DL.H264-RlsGrp")]
+        [TestCase("Series.Title.2023.S01E01.GERMAN.1080P.WEB.DL.H264-RlsGrp")]
+        [TestCase("Series Title 2023 S01E01 GERMAN 1080P WEB DL H264-RlsGrp")]
+        [TestCase("Series.Title.2023.S01E01.GERMAN.1080P.WEBDL.H264-RlsGrp")]
+        public void should_not_add_original_language_to_german_release_when_title_contains_web_dl(string postTitle)
+        {
+            var result = Parser.Parser.ParseTitle(postTitle);
+            result.Languages.Count.Should().Be(1);
+            result.Languages.Should().Contain(Language.German);
+        }
+
+        [TestCase("Series.Title.2023.S01.German.ML.EAC3.1080p.NF.WEB.H264-RlsGrp")]
+        public void should_add_original_language_and_english_to_german_release_with_ml_tag(string postTitle)
+        {
+            var result = Parser.Parser.ParseTitle(postTitle);
+            result.Languages.Count.Should().Be(3);
+            result.Languages.Should().Contain(Language.German);
+            result.Languages.Should().Contain(Language.Original);
+            result.Languages.Should().Contain(Language.English);
+        }
+
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].testtitle.default.eng.forced.ass", new[] { "default", "forced" }, "testtitle", "English")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].eng.default.testtitle.forced.ass", new[] { "default", "forced" }, "testtitle", "English")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].default.eng.testtitle.forced.ass", new[] { "default", "forced" }, "testtitle", "English")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].testtitle.forced.eng.ass", new[] { "forced" }, "testtitle", "English")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].eng.forced.testtitle.ass", new[] { "forced" }, "testtitle", "English")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].forced.eng.testtitle.ass", new[] { "forced" }, "testtitle", "English")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].testtitle.default.fra.forced.ass", new[] { "default", "forced" }, "testtitle", "French")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].fra.default.testtitle.forced.ass", new[] { "default", "forced" }, "testtitle", "French")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].default.fra.testtitle.forced.ass", new[] { "default", "forced" }, "testtitle", "French")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].testtitle.forced.fra.ass", new[] { "forced" }, "testtitle", "French")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].fra.forced.testtitle.ass", new[] { "forced" }, "testtitle", "French")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].forced.fra.testtitle.ass", new[] { "forced" }, "testtitle", "French")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].ru-something-else.srt", new string[0], "something-else", "Russian")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].Full Subtitles.eng.ass", new string[0], "Full Subtitles", "English")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].mytitle - 1.en.ass", new string[0], "mytitle", "English")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].mytitle.en.ass", new string[0], "mytitle", "English")]
+        public void should_parse_title_and_tags(string postTitle, string[] expectedTags, string expectedTitle, string expectedLanguage)
+        {
+            var subtitleTitleInfo = LanguageParser.ParseSubtitleLanguageInformation(postTitle);
+
+            subtitleTitleInfo.LanguageTags.Should().BeEquivalentTo(expectedTags);
+            subtitleTitleInfo.Title.Should().BeEquivalentTo(expectedTitle);
+            subtitleTitleInfo.Language.Should().BeEquivalentTo((Language)expectedLanguage);
+        }
+
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].default.forced.ass")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].default.ass")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].ass")]
+        [TestCase("Name (2020) - S01E20 - [AAC 2.0].testtitle.ass")]
+        public void should_not_parse_false_title(string postTitle)
+        {
+            var subtitleTitleInfo = LanguageParser.ParseSubtitleLanguageInformation(postTitle);
+            subtitleTitleInfo.Language.Should().Be(Language.Unknown);
+            subtitleTitleInfo.LanguageTags.Should().BeEmpty();
+            subtitleTitleInfo.RawTitle.Should().BeNull();
         }
     }
 }

@@ -9,6 +9,7 @@ using NzbDrone.Core.Configuration;
 using NzbDrone.Core.Http.CloudFlare;
 using NzbDrone.Core.ImportLists.Exceptions;
 using NzbDrone.Core.Indexers.Exceptions;
+using NzbDrone.Core.Localization;
 using NzbDrone.Core.Parser;
 using NzbDrone.Core.Parser.Model;
 
@@ -21,12 +22,13 @@ namespace NzbDrone.Core.ImportLists.AniList.List
                     IImportListStatusService importListStatusService,
                     IConfigService configService,
                     IParsingService parsingService,
+                    ILocalizationService localizationService,
                     Logger logger)
-        : base(netImportRepository, httpClient, importListStatusService, configService, parsingService, logger)
+        : base(netImportRepository, httpClient, importListStatusService, configService, parsingService, localizationService, logger)
         {
         }
 
-        public override string Name => "AniList List";
+        public override string Name => _localizationService.GetLocalizedString("TypeOfList", new Dictionary<string, object> { { "typeOfList", "AniList" } });
 
         public override AniListRequestGenerator GetRequestGenerator()
         {
@@ -42,10 +44,11 @@ namespace NzbDrone.Core.ImportLists.AniList.List
             return new AniListParser(Settings);
         }
 
-        protected override IList<ImportListItemInfo> FetchItems(Func<IImportListRequestGenerator, ImportListPageableRequestChain> pageableRequestChainSelector, bool isRecent = false)
+        protected override ImportListFetchResult FetchItems(Func<IImportListRequestGenerator, ImportListPageableRequestChain> pageableRequestChainSelector, bool isRecent = false)
         {
             var releases = new List<ImportListItemInfo>();
             var url = string.Empty;
+            var anyFailure = true;
 
             try
             {
@@ -75,6 +78,7 @@ namespace NzbDrone.Core.ImportLists.AniList.List
                 while (hasNextPage);
 
                 _importListStatusService.RecordSuccess(Definition.Id);
+                anyFailure = false;
             }
             catch (WebException webException)
             {
@@ -147,7 +151,7 @@ namespace NzbDrone.Core.ImportLists.AniList.List
                 _logger.Error(ex, "An error occurred while processing feed. {0}", url);
             }
 
-            return CleanupListItems(releases);
+            return new ImportListFetchResult(CleanupListItems(releases), anyFailure);
         }
     }
 }

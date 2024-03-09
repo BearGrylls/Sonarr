@@ -69,9 +69,9 @@ class EditDownloadClientModalContent extends Component {
 
           {
             !isFetching && !!error &&
-              <div>
+              <Alert kind={kinds.DANGER}>
                 {translate('AddDownloadClientError')}
-              </div>
+              </Alert>
           }
 
           {
@@ -133,7 +133,7 @@ class EditDownloadClientModalContent extends Component {
                   <FormInputGroup
                     type={inputTypes.NUMBER}
                     name="priority"
-                    helpText={translate('PriorityHelpText')}
+                    helpText={translate('DownloadClientPriorityHelpText')}
                     min={1}
                     max={50}
                     {...priority}

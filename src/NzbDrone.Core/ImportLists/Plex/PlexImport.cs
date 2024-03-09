@@ -5,9 +5,9 @@ using NzbDrone.Common.Extensions;
 using NzbDrone.Common.Http;
 using NzbDrone.Core.Configuration;
 using NzbDrone.Core.Exceptions;
+using NzbDrone.Core.Localization;
 using NzbDrone.Core.Notifications.Plex.PlexTv;
 using NzbDrone.Core.Parser;
-using NzbDrone.Core.Parser.Model;
 using NzbDrone.Core.Validation;
 
 namespace NzbDrone.Core.ImportLists.Plex
@@ -24,16 +24,17 @@ namespace NzbDrone.Core.ImportLists.Plex
                                   IImportListStatusService importListStatusService,
                                   IConfigService configService,
                                   IParsingService parsingService,
+                                  ILocalizationService localizationService,
                                   Logger logger)
-            : base(httpClient, importListStatusService, configService, parsingService, logger)
+            : base(httpClient, importListStatusService, configService, parsingService, localizationService, logger)
         {
             _plexTvService = plexTvService;
         }
 
-        public override string Name => "Plex Watchlist";
+        public override string Name => _localizationService.GetLocalizedString("ImportListsPlexSettingsWatchlistName");
         public override int PageSize => 50;
 
-        public override IList<ImportListItemInfo> Fetch()
+        public override ImportListFetchResult Fetch()
         {
             Settings.Validate().Filter("AccessToken").ThrowOnError();
 

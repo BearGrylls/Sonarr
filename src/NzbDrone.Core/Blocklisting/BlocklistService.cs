@@ -36,30 +36,28 @@ namespace NzbDrone.Core.Blocklisting
 
         public bool Blocklisted(int seriesId, ReleaseInfo release)
         {
-            var blocklistedByTitle = _blocklistRepository.BlocklistedByTitle(seriesId, release.Title);
-
             if (release.DownloadProtocol == DownloadProtocol.Torrent)
             {
-                var torrentInfo = release as TorrentInfo;
-
-                if (torrentInfo == null)
+                if (release is not TorrentInfo torrentInfo)
                 {
                     return false;
                 }
 
-                if (torrentInfo.InfoHash.IsNullOrWhiteSpace())
+                if (torrentInfo.InfoHash.IsNotNullOrWhiteSpace())
                 {
-                    return blocklistedByTitle.Where(b => b.Protocol == DownloadProtocol.Torrent)
-                                             .Any(b => SameTorrent(b, torrentInfo));
+                    var blocklistedByTorrentInfohash = _blocklistRepository.BlocklistedByTorrentInfoHash(seriesId, torrentInfo.InfoHash);
+
+                    return blocklistedByTorrentInfohash.Any(b => SameTorrent(b, torrentInfo));
                 }
 
-                var blocklistedByTorrentInfohash = _blocklistRepository.BlocklistedByTorrentInfoHash(seriesId, torrentInfo.InfoHash);
-
-                return blocklistedByTorrentInfohash.Any(b => SameTorrent(b, torrentInfo));
+                return _blocklistRepository.BlocklistedByTitle(seriesId, release.Title)
+                    .Where(b => b.Protocol == DownloadProtocol.Torrent)
+                    .Any(b => SameTorrent(b, torrentInfo));
             }
 
-            return blocklistedByTitle.Where(b => b.Protocol == DownloadProtocol.Usenet)
-                                     .Any(b => SameNzb(b, release));
+            return _blocklistRepository.BlocklistedByTitle(seriesId, release.Title)
+                .Where(b => b.Protocol == DownloadProtocol.Usenet)
+                .Any(b => SameNzb(b, release));
         }
 
         public bool BlocklistedTorrentHash(int seriesId, string hash)
@@ -176,20 +174,30 @@ namespace NzbDrone.Core.Blocklisting
         public void Handle(DownloadFailedEvent message)
         {
             var blocklist = new Blocklist
-                            {
-                                SeriesId = message.SeriesId,
-                                EpisodeIds = message.EpisodeIds,
-                                SourceTitle = message.SourceTitle,
-                                Quality = message.Quality,
-                                Date = DateTime.UtcNow,
-                                PublishedDate = DateTime.Parse(message.Data.GetValueOrDefault("publishedDate")),
-                                Size = long.Parse(message.Data.GetValueOrDefault("size", "0")),
-                                Indexer = message.Data.GetValueOrDefault("indexer"),
-                                Protocol = (DownloadProtocol)Convert.ToInt32(message.Data.GetValueOrDefault("protocol")),
-                                Message = message.Message,
-                                TorrentInfoHash = message.Data.GetValueOrDefault("torrentInfoHash"),
-                                Languages = message.Languages
-                            };
+            {
+                SeriesId = message.SeriesId,
+                EpisodeIds = message.EpisodeIds,
+                SourceTitle = message.SourceTitle,
+                Quality = message.Quality,
+                Date = DateTime.UtcNow,
+                PublishedDate = DateTime.Parse(message.Data.GetValueOrDefault("publishedDate")),
+                Size = long.Parse(message.Data.GetValueOrDefault("size", "0")),
+                Indexer = message.Data.GetValueOrDefault("indexer"),
+                Protocol = (DownloadProtocol)Convert.ToInt32(message.Data.GetValueOrDefault("protocol")),
+                Message = message.Message,
+                TorrentInfoHash = message.Data.GetValueOrDefault("torrentInfoHash"),
+                Languages = message.Languages
+            };
+
+            if (Enum.TryParse(message.Data.GetValueOrDefault("indexerFlags"), true, out IndexerFlags flags))
+            {
+                blocklist.IndexerFlags = flags;
+            }
+
+            if (Enum.TryParse(message.Data.GetValueOrDefault("releaseType"), true, out ReleaseType releaseType))
+            {
+                blocklist.ReleaseType = releaseType;
+            }
 
             _blocklistRepository.Insert(blocklist);
         }

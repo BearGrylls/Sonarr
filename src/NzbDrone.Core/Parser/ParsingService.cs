@@ -396,7 +396,7 @@ namespace NzbDrone.Core.Parser
                     return new FindSeriesResult(searchCriteria.Series, SeriesMatchType.Id);
                 }
 
-                if (tvRageId > 0 && tvRageId == searchCriteria.Series.TvRageId)
+                if (tvRageId > 0 && tvRageId == searchCriteria.Series.TvRageId && tvdbId <= 0)
                 {
                     _logger.Debug()
                            .Message("Found matching series by TVRage ID {0}, an alias may be needed for: {1}", tvRageId, parsedEpisodeInfo.SeriesTitle)
@@ -446,14 +446,14 @@ namespace NzbDrone.Core.Parser
                 }
             }
 
-            if (series == null && tvRageId > 0)
+            if (series == null && tvRageId > 0 && tvdbId <= 0)
             {
                 series = _seriesService.FindByTvRageId(tvRageId);
 
                 if (series != null)
                 {
                     _logger.Debug()
-                           .Message("Found matching series by TVRage ID {0}, an alias may be needed for: {1}", tvdbId, parsedEpisodeInfo.SeriesTitle)
+                           .Message("Found matching series by TVRage ID {0}, an alias may be needed for: {1}", tvRageId, parsedEpisodeInfo.SeriesTitle)
                            .Property("TvRageId", tvRageId)
                            .Property("ParsedEpisodeInfo", parsedEpisodeInfo)
                            .WriteSentryWarn("TvRageIdMatch", tvRageId.ToString(), parsedEpisodeInfo.SeriesTitle)

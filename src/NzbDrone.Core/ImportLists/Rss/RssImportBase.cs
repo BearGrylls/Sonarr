@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using NLog;
 using NzbDrone.Common.Http;
 using NzbDrone.Core.Configuration;
+using NzbDrone.Core.Localization;
 using NzbDrone.Core.Parser;
-using NzbDrone.Core.Parser.Model;
 
 namespace NzbDrone.Core.ImportLists.Rss
 {
@@ -19,12 +18,13 @@ namespace NzbDrone.Core.ImportLists.Rss
             IImportListStatusService importListStatusService,
             IConfigService configService,
             IParsingService parsingService,
+            ILocalizationService localizationService,
             Logger logger)
-            : base(httpClient, importListStatusService, configService, parsingService, logger)
+            : base(httpClient, importListStatusService, configService, parsingService, localizationService, logger)
         {
         }
 
-        public override IList<ImportListItemInfo> Fetch()
+        public override ImportListFetchResult Fetch()
         {
             return FetchItems(g => g.GetListItems());
         }

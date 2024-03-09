@@ -40,6 +40,12 @@ namespace NzbDrone.Core.Tv
                 return;
             }
 
+            // Skip episode level monitoring and use season information when series was added
+            if (monitoringOptions.Monitor == MonitorTypes.Skip)
+            {
+                return;
+            }
+
             var firstSeason = series.Seasons.Select(s => s.SeasonNumber).Where(s => s > 0).MinOrDefault();
             var lastSeason = series.Seasons.Select(s => s.SeasonNumber).MaxOrDefault();
             var episodes = _episodeService.GetEpisodeBySeries(series.Id);
@@ -135,11 +141,12 @@ namespace NzbDrone.Core.Tv
                 // Monitor the last season when:
                 // - Not specials
                 // - The latest season
-                // - Set to monitor all or future episodes
+                // - Set to monitor all episodes
+                // - Set to monitor future episodes and series is continuing or not yet aired
                 if (seasonNumber > 0 &&
                     seasonNumber == lastSeason &&
                     (monitoringOptions.Monitor == MonitorTypes.All ||
-                    monitoringOptions.Monitor == MonitorTypes.Future))
+                     (monitoringOptions.Monitor == MonitorTypes.Future && series.Status is SeriesStatusType.Continuing or SeriesStatusType.Upcoming)))
                 {
                     season.Monitored = true;
                 }

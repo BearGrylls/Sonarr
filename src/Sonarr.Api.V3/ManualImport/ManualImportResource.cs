@@ -4,6 +4,7 @@ using NzbDrone.Common.Crypto;
 using NzbDrone.Core.DecisionEngine;
 using NzbDrone.Core.Languages;
 using NzbDrone.Core.MediaFiles.EpisodeImport.Manual;
+using NzbDrone.Core.Parser.Model;
 using NzbDrone.Core.Qualities;
 using Sonarr.Api.V3.CustomFormats;
 using Sonarr.Api.V3.Episodes;
@@ -30,6 +31,8 @@ namespace Sonarr.Api.V3.ManualImport
         public string DownloadId { get; set; }
         public List<CustomFormatResource> CustomFormats { get; set; }
         public int CustomFormatScore { get; set; }
+        public int IndexerFlags { get; set; }
+        public ReleaseType ReleaseType { get; set; }
         public IEnumerable<Rejection> Rejections { get; set; }
     }
 
@@ -65,6 +68,8 @@ namespace Sonarr.Api.V3.ManualImport
 
                 // QualityWeight
                 DownloadId = model.DownloadId,
+                IndexerFlags = model.IndexerFlags,
+                ReleaseType = model.ReleaseType,
                 Rejections = model.Rejections
             };
         }

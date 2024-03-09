@@ -29,6 +29,7 @@ import { align, icons, kinds, scrollDirections } from 'Helpers/Props';
 import SelectEpisodeModal from 'InteractiveImport/Episode/SelectEpisodeModal';
 import { SelectedEpisode } from 'InteractiveImport/Episode/SelectEpisodeModalContent';
 import ImportMode from 'InteractiveImport/ImportMode';
+import SelectIndexerFlagsModal from 'InteractiveImport/IndexerFlags/SelectIndexerFlagsModal';
 import InteractiveImport, {
   InteractiveImportCommandOptions,
 } from 'InteractiveImport/InteractiveImport';
@@ -71,7 +72,8 @@ type SelectType =
   | 'episode'
   | 'releaseGroup'
   | 'quality'
-  | 'language';
+  | 'language'
+  | 'indexerFlags';
 
 type FilterExistingFiles = 'all' | 'new';
 
@@ -136,10 +138,20 @@ const COLUMNS = [
     isVisible: true,
   },
   {
+    name: 'indexerFlags',
+    label: React.createElement(Icon, {
+      name: icons.FLAG,
+      title: () => translate('IndexerFlags'),
+    }),
+    isSortable: true,
+    isVisible: true,
+  },
+  {
     name: 'rejections',
     label: React.createElement(Icon, {
       name: icons.DANGER,
       kind: kinds.DANGER,
+      title: () => translate('Rejections'),
     }),
     isSortable: true,
     isVisible: true,
@@ -269,33 +281,6 @@ function InteractiveImportModalContent(
   const [interactiveImportErrorMessage, setInteractiveImportErrorMessage] =
     useState<string | null>(null);
   const [selectState, setSelectState] = useSelectState();
-  const [bulkSelectOptions, setBulkSelectOptions] = useState([
-    {
-      key: 'select',
-      value: translate('SelectDropdown'),
-      disabled: true,
-    },
-    {
-      key: 'season',
-      value: translate('SelectSeason'),
-    },
-    {
-      key: 'episode',
-      value: translate('SelectEpisodes'),
-    },
-    {
-      key: 'quality',
-      value: translate('SelectQuality'),
-    },
-    {
-      key: 'releaseGroup',
-      value: translate('SelectReleaseGroup'),
-    },
-    {
-      key: 'language',
-      value: translate('SelectLanguage'),
-    },
-  ]);
   const { allSelected, allUnselected, selectedState } = selectState;
   const previousIsDeleting = usePrevious(isDeleting);
   const dispatch = useDispatch();
@@ -311,26 +296,93 @@ function InteractiveImportModalContent(
       }
     }
 
+    const showIndexerFlags = items.some((item) => item.indexerFlags);
+
+    if (!showIndexerFlags) {
+      const indexerFlagsColumn = result.find((c) => c.name === 'indexerFlags');
+
+      if (indexerFlagsColumn) {
+        indexerFlagsColumn.isVisible = false;
+      }
+    }
+
     return result;
-  }, [showSeries]);
+  }, [showSeries, items]);
 
   const selectedIds: number[] = useMemo(() => {
     return getSelectedIds(selectedState);
   }, [selectedState]);
 
+  const bulkSelectOptions = useMemo(() => {
+    const { seasonSelectDisabled, episodeSelectDisabled } = items.reduce(
+      (acc, item) => {
+        if (!selectedIds.includes(item.id)) {
+          return acc;
+        }
+
+        const lastSelectedSeason = acc.lastSelectedSeason;
+
+        acc.seasonSelectDisabled ||= !item.series;
+        acc.episodeSelectDisabled ||=
+          item.seasonNumber === undefined ||
+          (lastSelectedSeason >= 0 && item.seasonNumber !== lastSelectedSeason);
+        acc.lastSelectedSeason = item.seasonNumber ?? -1;
+
+        return acc;
+      },
+      {
+        seasonSelectDisabled: false,
+        episodeSelectDisabled: false,
+        lastSelectedSeason: -1,
+      }
+    );
+
+    const options = [
+      {
+        key: 'select',
+        value: translate('SelectDropdown'),
+        disabled: true,
+      },
+      {
+        key: 'season',
+        value: translate('SelectSeason'),
+        disabled: seasonSelectDisabled,
+      },
+      {
+        key: 'episode',
+        value: translate('SelectEpisodes'),
+        disabled: episodeSelectDisabled,
+      },
+      {
+        key: 'quality',
+        value: translate('SelectQuality'),
+      },
+      {
+        key: 'releaseGroup',
+        value: translate('SelectReleaseGroup'),
+      },
+      {
+        key: 'language',
+        value: translate('SelectLanguage'),
+      },
+      {
+        key: 'indexerFlags',
+        value: translate('SelectIndexerFlags'),
+      },
+    ];
+
+    if (allowSeriesChange) {
+      options.splice(1, 0, {
+        key: 'series',
+        value: translate('SelectSeries'),
+      });
+    }
+
+    return options;
+  }, [allowSeriesChange, items, selectedIds]);
+
   useEffect(
     () => {
-      if (allowSeriesChange) {
-        const newBulkSelectOptions = [...bulkSelectOptions];
-
-        newBulkSelectOptions.splice(1, 0, {
-          key: 'series',
-          value: translate('SelectSeries'),
-        });
-
-        setBulkSelectOptions(newBulkSelectOptions);
-      }
-
       if (initialSortKey) {
         const sortProps: { sortKey: string; sortDirection?: string } = {
           sortKey: initialSortKey,
@@ -457,6 +509,7 @@ function InteractiveImportModalContent(
           releaseGroup,
           quality,
           languages,
+          indexerFlags,
           episodeFileId,
         } = item;
 
@@ -506,6 +559,7 @@ function InteractiveImportModalContent(
               releaseGroup,
               quality,
               languages,
+              indexerFlags,
             });
 
             return;
@@ -520,6 +574,7 @@ function InteractiveImportModalContent(
           releaseGroup,
           quality,
           languages,
+          indexerFlags,
           downloadId,
           episodeFileId,
         });
@@ -706,6 +761,22 @@ function InteractiveImportModalContent(
         updateInteractiveImportItems({
           ids: selectedIds,
           quality,
+        })
+      );
+
+      dispatch(reprocessInteractiveImportItems({ ids: selectedIds }));
+
+      setSelectModalOpen(null);
+    },
+    [selectedIds, dispatch]
+  );
+
+  const onIndexerFlagsSelect = useCallback(
+    (indexerFlags: number) => {
+      dispatch(
+        updateInteractiveImportItems({
+          ids: selectedIds,
+          indexerFlags,
         })
       );
 
@@ -918,6 +989,14 @@ function InteractiveImportModalContent(
         real={false}
         modalTitle={modalTitle}
         onQualitySelect={onQualitySelect}
+        onModalClose={onSelectModalClose}
+      />
+
+      <SelectIndexerFlagsModal
+        isOpen={selectModalOpen === 'indexerFlags'}
+        indexerFlags={0}
+        modalTitle={modalTitle}
+        onIndexerFlagsSelect={onIndexerFlagsSelect}
         onModalClose={onSelectModalClose}
       />
 

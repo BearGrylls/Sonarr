@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using NzbDrone.Core.Configuration;
+using NzbDrone.Core.Localization;
 using NzbDrone.Core.MediaFiles;
 using NzbDrone.Core.ThingiProvider;
 using NzbDrone.Core.Tv;
@@ -13,11 +14,13 @@ namespace NzbDrone.Core.Notifications.Webhook
     {
         private readonly IConfigFileProvider _configFileProvider;
         private readonly IConfigService _configService;
+        protected readonly ILocalizationService _localizationService;
 
-        protected WebhookBase(IConfigFileProvider configFileProvider, IConfigService configService)
+        protected WebhookBase(IConfigFileProvider configFileProvider, IConfigService configService, ILocalizationService localizationService)
         {
             _configFileProvider = configFileProvider;
             _configService = configService;
+            _localizationService = localizationService;
         }
 
         protected WebhookGrabPayload BuildOnGrabPayload(GrabMessage message)
@@ -62,9 +65,10 @@ namespace NzbDrone.Core.Notifications.Webhook
 
             if (message.OldFiles.Any())
             {
-                payload.DeletedFiles = message.OldFiles.ConvertAll(x => new WebhookEpisodeFile(x)
+                payload.DeletedFiles = message.OldFiles.ConvertAll(x => new WebhookEpisodeFile(x.EpisodeFile)
                 {
-                    Path = Path.Combine(message.Series.Path, x.RelativePath)
+                    Path = Path.Combine(message.Series.Path, x.EpisodeFile.RelativePath),
+                    RecycleBinPath = x.RecycleBinPath
                 });
             }
 
@@ -171,8 +175,8 @@ namespace NzbDrone.Core.Notifications.Webhook
                 Series = new WebhookSeries(message.Series),
                 Episodes = remoteEpisode.Episodes.ConvertAll(x => new WebhookEpisode(x)),
                 DownloadInfo = new WebhookDownloadClientItem(quality, message.TrackedDownload.DownloadItem),
-                DownloadClient = message.DownloadClientName,
-                DownloadClientType = message.DownloadClientType,
+                DownloadClient = message.DownloadClientInfo?.Name,
+                DownloadClientType = message.DownloadClientInfo?.Type,
                 DownloadId = message.DownloadId,
                 CustomFormatInfo = new WebhookCustomFormatInfo(remoteEpisode.CustomFormats, remoteEpisode.CustomFormatScore),
                 Release = new WebhookGrabbedRelease(message.Release)
